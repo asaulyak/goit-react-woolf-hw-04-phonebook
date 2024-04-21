@@ -1,27 +1,30 @@
-import { Component } from 'react';
+import { Component, useEffect, useState } from 'react';
 import { ContactForm } from './ContactForm/ContactForm';
 import { ContactList } from './ContactList/ContactList';
 import { Filter } from './Filter/Filter';
 import { storage } from '../common/storage/storage';
 
-export class App extends Component {
-  state = {
-    contacts: [],
-    filter: '',
-  };
+export const App = () => {
+  const [contacts, setContacts] = useState(null);
+  const [filter, setFilter] = useState('');
+  const [filteredContacts, setFilteredContacts] = useState([]);
 
-  componentDidUpdate(prevProps, prevState, snapshot) {
-    if (this.state.contacts !== prevState.contacts) {
-      this.storeContacts();
+  useEffect(() => {
+    loadContacts();
+  }, []);
+
+  useEffect(() => {
+    if (contacts) {
+      storeContacts();
     }
-  }
+  }, [contacts]);
 
-  componentDidMount() {
-    this.loadContacts();
-  }
+  useEffect(() => {
+    setFilteredContacts(getFilteredContacts());
+  }, [contacts, filter]);
 
-  handleAddContact = contact => {
-    const contactExists = this.state.contacts.some(
+  const handleAddContact = contact => {
+    const contactExists = contacts.some(
       item => item.name.toLowerCase() === contact.name.toLowerCase()
     );
 
@@ -30,76 +33,68 @@ export class App extends Component {
       return;
     }
 
-    this.setState(() => ({ contacts: [...this.state.contacts, contact] }));
+    setContacts([...contacts, contact]);
   };
 
-  handleDeleteContact = id => {
+  const handleDeleteContact = id => {
     if (!id) {
       return;
     }
 
-    this.setState(prevState => ({
-      contacts: prevState.contacts.filter(item => item.id !== id),
-    }));
+    setContacts(prev => prev.filter(item => item.id !== id));
   };
 
-  handleSearch = filter => {
-    this.setState({ filter: filter.toLowerCase() });
+  const handleSearch = term => {
+    setFilter(term);
   };
 
-  getFilteredContacts() {
-    let filteredContacts = this.state.contacts;
-    const filter = this.state.filter?.trim();
+  const getFilteredContacts = () => {
+    let filteredContacts = contacts || [];
+    const filterClean = filter?.trim();
 
-    if (filter) {
+    if (filterClean) {
       filteredContacts = filteredContacts.filter(item =>
-        item.name.toLowerCase().includes(filter)
+        item.name.toLowerCase().includes(filterClean)
       );
     }
 
     return filteredContacts;
-  }
+  };
 
-  loadContacts() {
+  const loadContacts = () => {
     const storedContacts = storage.get('contacts');
 
-    if (storedContacts?.length) {
-      this.setState({
-        contacts: storedContacts,
-      });
+    setContacts(storedContacts || []);
+  };
+
+  const storeContacts = () => {
+    if (contacts) {
+      storage.set('contacts', contacts);
     }
-  }
+  };
 
-  storeContacts() {
-    storage.set('contacts', this.state.contacts);
-  }
+  return (
+    <div
+      style={{
+        height: '100vh',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        fontSize: 40,
+        color: '#010101',
+      }}
+    >
+      <div>
+        <h1>Phonebook</h1>
+        <ContactForm onAddContact={handleAddContact} />
 
-  render() {
-    const filteredContacts = this.getFilteredContacts();
-
-    return (
-      <div
-        style={{
-          height: '100vh',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          fontSize: 40,
-          color: '#010101',
-        }}
-      >
-        <div>
-          <h1>Phonebook</h1>
-          <ContactForm onAddContact={this.handleAddContact} />
-
-          <h2>Contacts</h2>
-          <Filter onSearch={this.handleSearch} />
-          <ContactList
-            contacts={filteredContacts}
-            onContactDelete={this.handleDeleteContact}
-          />
-        </div>
+        <h2>Contacts</h2>
+        <Filter onSearch={handleSearch} />
+        <ContactList
+          contacts={filteredContacts}
+          onContactDelete={handleDeleteContact}
+        />
       </div>
-    );
-  }
-}
+    </div>
+  );
+};
