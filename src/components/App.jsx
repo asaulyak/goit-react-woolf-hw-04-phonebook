@@ -1,4 +1,4 @@
-import { Component, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ContactForm } from './ContactForm/ContactForm';
 import { ContactList } from './ContactList/ContactList';
 import { Filter } from './Filter/Filter';
@@ -10,17 +10,28 @@ export const App = () => {
   const [filteredContacts, setFilteredContacts] = useState([]);
 
   useEffect(() => {
-    loadContacts();
+    const storedContacts = storage.get('contacts');
+
+    setContacts(storedContacts || []);
   }, []);
 
   useEffect(() => {
     if (contacts) {
-      storeContacts();
+      storage.set('contacts', contacts);
     }
   }, [contacts]);
 
   useEffect(() => {
-    setFilteredContacts(getFilteredContacts());
+    let filteredContacts = contacts || [];
+    const filterClean = filter?.trim();
+
+    if (filterClean) {
+      filteredContacts = filteredContacts.filter(item =>
+        item.name.toLowerCase().includes(filterClean)
+      );
+    }
+
+    setFilteredContacts(filteredContacts);
   }, [contacts, filter]);
 
   const handleAddContact = contact => {
@@ -46,31 +57,6 @@ export const App = () => {
 
   const handleSearch = term => {
     setFilter(term);
-  };
-
-  const getFilteredContacts = () => {
-    let filteredContacts = contacts || [];
-    const filterClean = filter?.trim();
-
-    if (filterClean) {
-      filteredContacts = filteredContacts.filter(item =>
-        item.name.toLowerCase().includes(filterClean)
-      );
-    }
-
-    return filteredContacts;
-  };
-
-  const loadContacts = () => {
-    const storedContacts = storage.get('contacts');
-
-    setContacts(storedContacts || []);
-  };
-
-  const storeContacts = () => {
-    if (contacts) {
-      storage.set('contacts', contacts);
-    }
   };
 
   return (
