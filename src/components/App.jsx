@@ -5,34 +5,14 @@ import { Filter } from './Filter/Filter';
 import { storage } from '../common/storage/storage';
 
 export const App = () => {
-  const [contacts, setContacts] = useState(null);
+  const [contacts, setContacts] = useState(() => storage.get('contacts') || []);
   const [filter, setFilter] = useState('');
-  const [filteredContacts, setFilteredContacts] = useState([]);
-
-  useEffect(() => {
-    const storedContacts = storage.get('contacts');
-
-    setContacts(storedContacts || []);
-  }, []);
 
   useEffect(() => {
     if (contacts) {
       storage.set('contacts', contacts);
     }
   }, [contacts]);
-
-  useEffect(() => {
-    let filteredContacts = contacts || [];
-    const filterClean = filter?.trim();
-
-    if (filterClean) {
-      filteredContacts = filteredContacts.filter(item =>
-        item.name.toLowerCase().includes(filterClean)
-      );
-    }
-
-    setFilteredContacts(filteredContacts);
-  }, [contacts, filter]);
 
   const handleAddContact = contact => {
     const contactExists = contacts.some(
@@ -59,6 +39,19 @@ export const App = () => {
     setFilter(term);
   };
 
+  const getFilteredContacts = () => {
+    let filteredContacts = contacts || [];
+    const filterClean = filter?.trim();
+
+    if (filterClean) {
+      filteredContacts = filteredContacts.filter(item =>
+        item.name.toLowerCase().includes(filterClean)
+      );
+    }
+
+    return filteredContacts;
+  };
+
   return (
     <div
       style={{
@@ -77,7 +70,7 @@ export const App = () => {
         <h2>Contacts</h2>
         <Filter onSearch={handleSearch} />
         <ContactList
-          contacts={filteredContacts}
+          contacts={getFilteredContacts()}
           onContactDelete={handleDeleteContact}
         />
       </div>
